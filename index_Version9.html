@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Will you be my Valentine?</title>
+  <style>
+    :root{
+      --accent:#ff6fa3;
+      --accent-2:#ffb3c6;
+      --muted:#8b6b7b;
+      --radius:14px;
+      --shadow: 0 14px 50px rgba(215,80,140,0.12);
+      --heart-size:56px;
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(135deg,#fff1f4,#fff3ea);color:#5a3744;-webkit-text-size-adjust:100%;}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;}
+    .card{
+      width:100%; max-width:980px;
+      background:linear-gradient(180deg,rgba(255,255,255,0.98),#fff7fb);
+      border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; position:relative;
+      display:grid; grid-template-columns: 1fr 360px; gap:16px;
+    }
+
+    /* Large photo area */
+    .photo{
+      height:min(72vh,800px);
+      border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(90deg, rgba(255,230,240,0.6), rgba(255,245,247,0.6));
+      position:relative;
+    }
+    .photo img{ width:100%; height:100%; object-fit:cover; display:block; transition:transform .45s ease; }
+    .view-full{ position:absolute; right:12px; bottom:12px; background:rgba(255,255,255,0.95); color:#b24a77; padding:8px 10px; border-radius:10px; border:1px solid rgba(178,74,119,0.08); cursor:pointer; font-weight:700; box-shadow:0 8px 30px rgba(200,60,110,0.06); }
+
+    /* Right column */
+    .side{ display:flex; flex-direction:column; gap:12px; padding:6px 6px; }
+    h1{ margin:0; font-size:20px; color:#b03a6b; text-align:left; }
+    .lead{ margin:0; font-weight:700; color:#6f3f56; text-align:left; }
+
+    .countdown{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .time-box{ background:linear-gradient(180deg,#fff,#fff0); padding:8px 12px; border-radius:10px; min-width:68px; text-align:center; box-shadow:0 6px 18px rgba(200,80,120,0.06); }
+    .time-box .num{ font-weight:800; color:#b93b70; font-size:18px; }
+    .time-box .label{ font-size:11px; color:#9a6a80; }
+
+    .actions{ position:relative; height:72px; display:flex; align-items:center; gap:12px; margin-top:6px; }
+    .btn{ border:0; padding:12px 18px; border-radius:999px; cursor:pointer; font-weight:800; font-size:16px; box-shadow:0 8px 18px rgba(200,80,120,0.08); background:#fff; color:#b24a77; }
+    .btn-yes{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; }
+
+    /* NO button: absolute inside .actions, starts with pointer events but will evade */
+    .btn-no{
+      position:absolute; min-width:120px; z-index:60;
+      background:#fff7fb; color:#b44a78; border:1px solid rgba(180,74,120,0.08);
+      border-radius:999px; padding:12px 18px; box-shadow:0 10px 30px rgba(200,60,110,0.06);
+      user-select:none; touch-action:none; -webkit-user-select:none;
+      /* subtle wobble so it never stays visually still */
+      animation: wobble 2600ms linear infinite;
+    }
+    @keyframes wobble{ 0%{ transform: translate(0,0) } 25%{ transform: translate(6px,-3px) } 50%{ transform: translate(-4px,4px) } 75%{ transform: translate(6px,2px) } 100%{ transform: translate(0,0) } }
+
+    .secret{ display:none; padding:12px; border-radius:12px; background:linear-gradient(180deg,#fff7fb,#fff3f7); box-shadow:0 10px 28px rgba(150,60,100,0.04); text-align:left; }
+    .secret h2{ margin:0 0 8px; color:#a03364; font-size:18px; }
+    .secret p{ margin:0; color:#6f4456; line-height:1.5; white-space:pre-line; }
+
+    .celebrate-text{ display:none; margin-top:12px; text-align:center; font-weight:900; color:#d43b74; font-size:20px; animation:pop .7s both; }
+    @keyframes pop{ 0%{ transform:scale(.95); opacity:0 } 60%{ transform:scale(1.06); opacity:1 } 100%{ transform:scale(1); opacity:1 } }
+
+    .hearts-layer{ position:fixed; inset:0; pointer-events:none; z-index:9999; overflow:visible; }
+
+    .footer{ color:var(--muted); font-size:13px; text-align:left; }
+
+    /* overlay (iOS friendly) */
+    .tap-overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:20000; background:linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,250,251,0.9)); flex-direction:column; gap:10px; padding:18px; box-sizing:border-box; }
+    .tap-btn{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; padding:14px 20px; border-radius:12px; font-weight:900; font-size:16px; box-shadow:0 10px 30px rgba(255,120,160,0.12); }
+    .tap-note{ color:var(--muted); font-size:13px; text-align:center; max-width:360px; }
+
+    /* modal */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(20,10,20,0.6); z-index:20001; padding:18px; box-sizing:border-box; }
+    .imgwrap{ width:100%; max-width:1100px; max-height:92vh; background:#fff; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+    .imgwrap img{ width:100%; height:100%; object-fit:contain; display:block; }
+    .close{ position:absolute; right:18px; top:18px; background:rgba(255,255,255,0.96); border-radius:10px; padding:8px 10px; font-weight:700; color:#b24a77; cursor:pointer; border:1px solid rgba(178,74,119,0.08); box-shadow:0 8px 30px rgba(200,60,110,0.06); }
+
+    @media (max-width:1000px){ .card{ grid-template-columns:1fr; } .photo{ height:55vh; } }
+    @media (max-width:480px){ .photo{ height:48vh } .btn-no{ min-width:100px } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="card">
+      <!-- LEFT: Big photo -->
+      <div class="photo" id="photo">
+        <img id="usPhoto" src="us.jpg" alt="Us together" />
+        <button class="view-full" id="viewFullBtn" aria-label="View full photo">View full</button>
+      </div>
+
+      <!-- RIGHT: side -->
+      <div class="side">
+        <div>
+          <h1>Hey Babyboy ❤️</h1>
+          <p class="lead">Will you be my Valentine?</p>
+        </div>
+
+        <div class="countdown" aria-live="polite" id="countdown">
+          <div class="time-box"><div class="num" id="days">--</div><div class="label">Days</div></div>
+          <div class="time-box"><div class="num" id="hours">--</div><div class="label">Hours</div></div>
+          <div class="time-box"><div class="num" id="mins">--</div><div class="label">Minutes</div></div>
+          <div class="time-box"><div class="num" id="secs">--</div><div class="label">Seconds</div></div>
+        </div>
+
+        <div class="actions" id="actions">
+          <button id="yesBtn" class="btn btn-yes" aria-label="Yes">Yes 💕</button>
+          <!-- NO button is intentionally evasive. tabindex=-1 prevents keyboard focus -->
+          <button id="noBtn" class="btn-no" aria-hidden="true" tabindex="-1">No 🙃</button>
+        </div>
+
+        <div class="secret" id="secret">
+          <h2 id="celebrateTitle">Yayyy, I knew you’d say yes 😏💖</h2>
+          <p id="secretText">
+Congrats… you’re officially stuck with me forever 🥰✨
+
+You’re not just my boyfriend — you’re my safe place, my favorite person, my 3 a.m. thought, and the smile I didn’t know I needed every day. I love you tons :)
+          </p>
+          <p style="text-align:right;font-weight:700;margin-top:8px;">— Neha 💘</p>
+          <div id="celebrateText" class="celebrate-text">WOOHOOOO 🎉</div>
+        </div>
+
+        <div class="footer">This little page was made to be as cute and silly as our love 💖</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- full-image modal -->
+  <div class="modal" id="modal"><div class="imgwrap"><img id="modalImg" src="us.jpg" alt="Full view"></div><button class="close" id="modalClose">Close</button></div>
+
+  <!-- Two hidden audio elements (only two songs, no visible dashboard) -->
+  <audio id="audioA" preload="auto" playsinline webkit-playsinline crossorigin="anonymous"></audio>
+  <audio id="audioB" preload="auto" playsinline webkit-playsinline crossorigin="anonymous"></audio>
+
+  <!-- overlay to unlock audio on iPhone and desktops (single big tap) -->
+  <div class="tap-overlay" id="tapOverlay" role="dialog" aria-modal="true" aria-label="Tap to play">
+    <div style="font-weight:800;color:#b03a6b;font-size:18px;text-align:center">Tap once to start the songs & reveal the photo</div>
+    <button id="startBtn" class="tap-btn">Play ❤</button>
+    <div class="tap-note">iPhone requires a tap to start audio — this will also ensure the photo displays correctly.</div>
+  </div>
+
+  <div class="hearts-layer" id="heartsLayer" aria-hidden="true"></div>
+
+  <script>
+    /* ----------------------------
+       Countdown
+    ---------------------------- */
+    function getNextValentines(){
+      const now = new Date();
+      let year = now.getFullYear();
+      const target = new Date(year, 1, 14, 0, 0, 0);
+      if (now > target) target.setFullYear(year + 1);
+      return target;
+    }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function updateCountdown(){
+      const t = getNextValentines() - new Date();
+      const secs = Math.floor(t/1000) % 60;
+      const mins = Math.floor(t/1000/60) % 60;
+      const hours = Math.floor(t/1000/3600) % 24;
+      const days = Math.floor(t/1000/3600/24);
+      document.getElementById('days').textContent = days;
+      document.getElementById('hours').textContent = pad(hours);
+      document.getElementById('mins').textContent = pad(mins);
+      document.getElementById('secs').textContent = pad(secs);
+    }
+    updateCountdown(); setInterval(updateCountdown, 1000);
+
+    /* ----------------------------
+       Playlist (two songs)
+       - keep only two mp3 files next to this HTML:
+         findin_her.mp3
+         pehle_bhi_main.mp3
+    ---------------------------- */
+    const playlist = [
+      { src: 'findin_her.mp3', title: 'Findin Her' },
+      { src: 'pehle_bhi_main.mp3', title: 'Pehle Bhi Main' }
+    ];
+
+    const audioA = document.getElementById('audioA');
+    const audioB = document.getElementById('audioB');
+    let active = audioA, standby = audioB;
+    let activeIndex = 0;
+    let isPlaying = false;
+    let autoplayQueue = true;
+
+    function safeSetVol(el, v){ try{ el.volume = Math.max(0, Math.min(1, v)); }catch(e){} }
+
+    function loadTo(el, index){
+      el.src = playlist[index].src;
+      el.load();
+    }
+
+    function crossfadeTo(index, fadeMs = 1200){
+      if (index < 0 || index >= playlist.length) return;
+      loadTo(standby, index);
+      standby.currentTime = 0;
+      safeSetVol(standby, 0);
+      const targetVol = 0.9;
+      const stepMs = 60;
+      const steps = Math.max(1, Math.round(fadeMs/stepMs));
+      let cur = 0;
+      const p = standby.play();
+      if (p && p.catch) p.catch(()=>{});
+      const timer = setInterval(()=>{
+        cur++;
+        const t = cur/steps;
+        safeSetVol(standby, Math.min(targetVol, t*targetVol));
+        safeSetVol(active, Math.max(0, (1-t)*targetVol));
+        if (cur >= steps){
+          clearInterval(timer);
+          try{ active.pause(); }catch(e){}
+          const tmp = active; active = standby; standby = tmp;
+          activeIndex = index; isPlaying = true;
+          active.onended = ()=> {
+            if (autoplayQueue){
+              const next = (activeIndex + 1) % playlist.length;
+              crossfadeTo(next, 1200);
+            } else { isPlaying = false; }
+          };
+        }
+      }, stepMs);
+    }
+
+    // Start playback in response to the overlay tap (iOS unlocks audio if play is inside user gesture)
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    async function startPlaybackGesture(){
+      try { if (!audioCtx && AudioCtx) audioCtx = new AudioCtx(); if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e){ console.warn('AudioContext resume failed', e); }
+      try {
+        // load first track into active and play
+        loadTo(active, 0);
+        active.currentTime = 0;
+        await active.play();
+        safeSetVol(active, 0.9);
+        standby.pause();
+        isPlaying = true;
+        activeIndex = 0;
+        active.onended = ()=> {
+          const next = (activeIndex + 1) % playlist.length;
+          crossfadeTo(next, 1200);
+        };
+      } catch (err) {
+        console.warn('Playback start error', err);
+      }
+    }
+
+    /* ----------------------------
+       Tap overlay
+    ---------------------------- */
+    const tapOverlay = document.getElementById('tapOverlay');
+    const startBtn = document.getElementById('startBtn');
+    const usPhoto = document.getElementById('usPhoto');
+
+    // When tapped, ensure image is visible and start audio (iOS-friendly)
+    startBtn.addEventListener('click', async () => {
+      // reveal photo (already in DOM; ensure src correct and visible)
+      usPhoto.style.opacity = 1;
+      await startPlaybackGesture();
+      tapOverlay.style.display = 'none';
+      try{ if (navigator.vibrate) navigator.vibrate(40); } catch(e){}
+    });
+
+    // Preload first audio to speed up gesture
+    window.addEventListener('load', ()=> { try{ loadTo(active,0); }catch(e){} });
+
+    /* ----------------------------
+       Evasive NO button (very hard / impossible to click)
+       Strategies used:
+       - continuous random jitter + periodic teleports
+       - pointer proximity detection (pointermove) that instantly moves it away
+       - touchstart/pointerdown on the button prevented and moved
+       - blur on focus and tabindex=-1
+       - clamps so it stays inside the actions area but moves rapidly
+    ---------------------------- */
+    const noBtn = document.getElementById('noBtn');
+    const actions = document.getElementById('actions');
+
+    // Ensure No sits above other elements while moving
+    noBtn.style.position = 'absolute';
+    noBtn.style.left = 'calc(65%)';
+    noBtn.style.top = '6px';
+
+    // Utility: clamp and place within actions bounding box
+    function placeNoAtPixel(leftPx, topPx){
+      const rect = actions.getBoundingClientRect();
+      const maxLeft = Math.max(6, rect.width - noBtn.offsetWidth - 6);
+      const maxTop = Math.max(0, rect.height - noBtn.offsetHeight);
+      const left = Math.min(maxLeft, Math.max(6, Math.round(leftPx)));
+      const top = Math.min(maxTop, Math.max(0, Math.round(topPx)));
+      noBtn.style.left = left + 'px';
+      noBtn.style.top = top + 'px';
+    }
+
+    // Random teleport inside actions
+    function randomPlace(){
+      const rect = actions.getBoundingClientRect();
+      const left = Math.random() * (rect.width - noBtn.offsetWidth - 12) + 6;
+      const top = Math.random() * Math.max(6, rect.height - noBtn.offsetHeight) ;
+      placeNoAtPixel(left, top);
+    }
+
+    // Move away from a pointer coordinate quickly to opposite side
+    function escapeFromPointer(clientX, clientY){
+      const ar = actions.getBoundingClientRect();
+      // compute center of noBtn
+      const btnRect = noBtn.getBoundingClientRect();
+      const bx = btnRect.left + btnRect.width/2;
+      const by = btnRect.top + btnRect.height/2;
+      const dx = bx - clientX;
+      const dy = by - clientY;
+      const dist = Math.hypot(dx,dy);
+      // If the pointer is far, ignore
+      if (dist > Math.max(160, btnRect.width*2)) return false;
+      // Compute a new spot mirrored across center of actions with random jitter
+      const centerX = ar.left + ar.width/2;
+      const centerY = ar.top + ar.height/2;
+      // vector from pointer to center
+      const vx = centerX - clientX;
+      const vy = centerY - clientY;
+      // new position biased by that vector, push far
+      const push = Math.max(120, Math.min(300, (200 - dist) + Math.random()*160));
+      // convert to target px within actions coordinates
+      const targetClientX = clientX + (vx/dist || 0) * push + (Math.random()*120 - 60);
+      const targetClientY = clientY + (vy/dist || 0) * push + (Math.random()*80 - 40);
+      const leftPx = targetClientX - ar.left - (btnRect.width/2);
+      const topPx = targetClientY - ar.top - (btnRect.height/2);
+      // animate quickly
+      noBtn.style.transition = 'left 160ms ease-out, top 160ms ease-out, transform 160ms';
+      placeNoAtPixel(leftPx, topPx);
+      setTimeout(()=> noBtn.style.transition = '', 200);
+      return true;
+    }
+
+    // Prevent touching/clicking by intercepting events and moving away
+    function setupNoDefense(){
+      // Continuous jitter so it never stays still
+      setInterval(()=> {
+        if (noBtn.style.display === 'none') return;
+        const dx = (Math.random()*18 - 9);
+        const dy = (Math.random()*12 - 6);
+        noBtn.style.transform = `translate(${dx}px, ${dy}px)`;
+      }, 380);
+
+      // Periodic random teleport to make it unpredictable
+      setInterval(()=> { if (noBtn.style.display === 'none') return; randomPlace(); }, 900);
+
+      // pointermove on document: if pointer is near, escape
+      window.addEventListener('pointermove', (ev)=>{
+        if (noBtn.style.display === 'none') return;
+        escapeFromPointer(ev.clientX, ev.clientY);
+      }, {passive:true});
+
+      // On touchmove as well (mobile)
+      window.addEventListener('touchmove', (ev)=>{
+        if (noBtn.style.display === 'none') return;
+        const t = ev.touches && ev.touches[0];
+        if (t) escapeFromPointer(t.clientX, t.clientY);
+      }, {passive:true});
+
+      // If user tries to touch the button directly, intercept and jump away
+      noBtn.addEventListener('touchstart', (ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        // immediate jump
+        randomPlace();
+      }, {passive:false});
+
+      // pointerdown/click interception
+      noBtn.addEventListener('pointerdown', (ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        randomPlace();
+      }, {passive:false});
+
+      noBtn.addEventListener('mouseenter', (ev)=>{
+        // mouse hover — immediate escape
+        escapeFromPointer(ev.clientX, ev.clientY);
+      });
+
+      // prevent focus/keyboard selection
+      noBtn.addEventListener('focus', ()=> {
+        noBtn.blur();
+        randomPlace();
+      });
+
+      // extra: if the button somehow receives a click, cancel it
+      noBtn.addEventListener('click', (ev)=> {
+        ev.preventDefault(); ev.stopPropagation();
+        randomPlace();
+        return false;
+      });
+    }
+
+    // Initialize placement after layout
+    window.addEventListener('load', ()=> {
+      // place initially at a corner inside .actions
+      const ar = actions.getBoundingClientRect();
+      placeNoAtPixel(ar.width * 0.68, 6);
+      setTimeout(()=> randomPlace(), 200);
+      setTimeout(()=> randomPlace(), 800);
+      setupNoDefense();
+    });
+
+    /* ----------------------------
+       YES button behavior
+    ---------------------------- */
+    const yesBtn = document.getElementById('yesBtn');
+    const secret = document.getElementById('secret');
+    const celebrateText = document.getElementById('celebrateText');
+    const heartsLayer = document.getElementById('heartsLayer');
+
+    function doVibrate(){ try{ if (navigator.vibrate) navigator.vibrate([150,60,150]); }catch(e){} }
+    function stopNoBehavior(){ try{ noBtn.style.display = 'none'; }catch(e){} }
+
+    function showCelebrateText(){
+      celebrateText.style.display = 'block';
+      celebrateText.style.animation = 'none';
+      requestAnimationFrame(()=> { celebrateText.style.animation = ''; });
+    }
+
+    function startFloatingHearts(){
+      const message = ['I',' ','L','O','V','E',' ','Y','O','U',' ','P','R','A','T','H','A','M'];
+      const emojiPool = ['💖','💘','💕','💞'];
+      let i = 0;
+      function spawn(ch, idx){
+        const el = document.createElement('div');
+        el.className = 'heart';
+        el.textContent = ch === ' ' ? emojiPool[Math.floor(Math.random()*emojiPool.length)] : (Math.random()<0.18 ? ch + emojiPool[Math.floor(Math.random()*emojiPool.length)] : ch);
+        const left = (5 + Math.random()*90);
+        el.style.left = left + '%';
+        el.style.top = (window.innerHeight + 40 + Math.random()*40) + 'px';
+        const dx = (Math.random()*240 - 120) + (idx - message.length/2)*12;
+        el.style.setProperty('--dx', dx + 'px');
+        el.style.setProperty('--sx', '0px');
+        const dur = 5200 + Math.round(Math.random()*2200);
+        el.style.animationDuration = dur + 'ms';
+        heartsLayer.appendChild(el);
+        setTimeout(()=> el.remove(), dur + 300);
+      }
+      const timer = setInterval(()=>{
+        if (i >= message.length){ clearInterval(timer); for (let k=0;k<8;k++) setTimeout(()=> spawn(' ', k+100), k*160); return; }
+        spawn(message[i], i); i++;
+      }, 320);
+    }
+
+    yesBtn.addEventListener('click', async ()=>{
+      doVibrate();
+      stopNoBehavior();
+      secret.style.display = 'block';
+      showCelebrateText();
+      // ensure audio plays (if overlay tapped earlier, audio is already playing)
+      try { await active.play().catch(()=>{}); } catch(e){}
+      // hearts
+      startFloatingHearts();
+      for (let i=0;i<5;i++) setTimeout(()=> startFloatingHearts(), 420 + i*320);
+      setTimeout(()=> secret.scrollIntoView({behavior:'smooth', block:'center'}), 260);
+    });
+
+    /* ----------------------------
+       Full image modal
+    ---------------------------- */
+    const viewFullBtn = document.getElementById('viewFullBtn');
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const modalClose = document.getElementById('modalClose');
+
+    viewFullBtn.addEventListener('click', ()=> {
+      modal.style.display = 'flex';
+      modalImg.src = usPhoto.src || 'us.jpg';
+      try{ if (navigator.vibrate) navigator.vibrate(20); }catch(e){}
+    });
+    modalClose.addEventListener('click', ()=> modal.style.display = 'none');
+    modal.addEventListener('click', (e)=> { if (e.target === modal) modal.style.display = 'none'; });
+
+    /* ----------------------------
+       Small safety: prevent context menu on photo
+    ---------------------------- */
+    usPhoto.addEventListener('contextmenu', (e)=> e.preventDefault());
+
+    /* ----------------------------
+       Attempt to preload active track (keeps two songs only)
+       - overlay startBtn must be tapped on iPhone to begin
+    ---------------------------- */
+    window.addEventListener('load', ()=> { try{ loadTo(active,0); }catch(e){} });
+
+    // Expose small helper to console for debugging
+    console.log('Valentine page ready. No button is aggressively evasive; two-song player runs silently after overlay tap.');
+  </script>
+</body>
+</html>

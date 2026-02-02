@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Will you be my Valentine?</title>
+  <style>
+    :root{
+      --accent:#ff6fa3;
+      --accent-2:#ffb3c6;
+      --muted:#8b6a80;
+      --no-size: 96px;        /* size of the visible "No" badges */
+      --orbit-radius: min(46vw,46vh); /* base orbit radius */
+      --orbit-fast: 5.6s;
+      --orbit-med: 9.2s;
+      --orbit-slow: 13.5s;
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+      -webkit-text-size-adjust:100%;
+      background: linear-gradient(135deg,#fff1f4 0%, #ffeef6 30%, #fff3ea 100%);
+      color:#553a47;
+    }
+
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      box-sizing:border-box;
+    }
+
+    .card{
+      width:100%;
+      max-width:980px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), #fff7fb);
+      border-radius:14px;
+      box-shadow: 0 18px 60px rgba(215,80,140,0.10);
+      padding:14px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+    }
+
+    /* BIG PHOTO AREA */
+    .photo{
+      height:min(72vh, 820px);
+      border-radius:12px;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(90deg, rgba(255,230,240,0.6), rgba(255,245,247,0.6));
+      position:relative;
+    }
+    .photo img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      transition: transform .45s ease;
+    }
+    .view-full{
+      position:absolute;
+      right:12px;
+      bottom:12px;
+      background:rgba(255,255,255,0.95);
+      color:#b24a77;
+      padding:8px 10px;
+      border-radius:10px;
+      font-weight:700;
+      cursor:pointer;
+      border:1px solid rgba(178,74,119,0.08);
+      box-shadow:0 8px 30px rgba(200,60,110,0.06);
+    }
+
+    /* SIDE PANEL */
+    .side{ display:flex; flex-direction:column; gap:12px; padding:6px 6px; }
+    h1{ margin:0; font-size:20px; color:#b03a6b; text-align:left; }
+    .lead{ margin:0; font-weight:700; color:#6f3f56; text-align:left; }
+
+    .countdown{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+    .time-box{ background:linear-gradient(180deg,#fff,#fff0); padding:8px 12px; border-radius:10px; min-width:68px; text-align:center; box-shadow:0 6px 18px rgba(200,80,120,0.06); }
+    .time-box .num{ font-weight:800; color:#b93b70; font-size:18px; }
+    .time-box .label{ font-size:11px; color:#9a6a80; }
+
+    .actions{ position:relative; height:72px; display:flex; align-items:center; gap:12px; margin-top:6px; }
+    .btn{ border:0; padding:12px 18px; border-radius:999px; cursor:pointer; font-weight:800; font-size:16px; box-shadow:0 8px 18px rgba(200,80,120,0.08); background:#fff; color:#b24a77; }
+    .btn-yes{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; }
+
+    .secret{ display:none; padding:12px; border-radius:12px; background:linear-gradient(180deg,#fff7fb,#fff3f7); box-shadow:0 10px 28px rgba(150,60,100,0.04); text-align:left; }
+    .secret h2{ margin:0 0 8px; color:#a03364; font-size:17px; }
+    .secret p{ margin:0; color:#6f4456; line-height:1.5; white-space:pre-line; }
+
+    .celebrate-text{ display:none; margin-top:12px; text-align:center; font-weight:900; color:#d43b74; font-size:20px; animation:pop .7s both; }
+    @keyframes pop{ 0%{ transform:scale(.95); opacity:0 } 60%{ transform:scale(1.06); opacity:1 } 100%{ transform:scale(1); opacity:1 } }
+
+    .hearts-layer{ position:fixed; inset:0; pointer-events:none; z-index:12000; }
+
+    .footer{ margin-top:8px; font-size:13px; color:var(--muted); text-align:left; }
+
+    /* TAP OVERLAY (for iPhone audio unlocking) */
+    .tap-overlay{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:20000;
+      background:linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,250,251,0.9));
+      flex-direction:column; gap:12px; padding:18px; box-sizing:border-box;
+    }
+    .tap-btn{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; padding:14px 22px; border-radius:12px; font-weight:900; font-size:16px; box-shadow:0 10px 30px rgba(255,120,160,0.12); }
+    .tap-hint{ color:var(--muted); font-size:13px; text-align:center; max-width:420px; }
+
+    /* FULLSCREEN MODAL */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(20,10,20,0.6); z-index:20001; padding:18px; box-sizing:border-box; }
+    .imgwrap{ width:100%; max-width:1100px; max-height:92vh; background:#fff; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+    .imgwrap img{ width:100%; height:100%; object-fit:contain; display:block; }
+    .close{ position:absolute; right:18px; top:18px; background:rgba(255,255,255,0.96); border-radius:10px; padding:8px 10px; font-weight:700; color:#b24a77; cursor:pointer; border:1px solid rgba(178,74,119,0.08); box-shadow:0 8px 30px rgba(200,60,110,0.06); }
+
+    /* -------- MULTI-RING ORBIT (visual-only, untouchable) --------
+       - .orbit-wrapper covers viewport and has pointer-events:none so it's impossible to touch.
+       - three rings at different radii/speeds/directions sweep "No" over the page.
+    */
+    .orbit-wrapper{
+      position:fixed;
+      inset:0;
+      pointer-events:none; /* critical: makes the entire visual not interactable */
+      z-index:15000;
+    }
+    .ring{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform-origin:center center;
+      will-change:transform;
+    }
+
+    /* ring sizes are set relative to --orbit-radius and vary so labels cover different rings */
+    .r1{ width: calc(var(--orbit-radius) * 2); height: calc(var(--orbit-radius) * 2); margin-left: calc(-1 * var(--orbit-radius)); margin-top: calc(-1 * var(--orbit-radius)); animation: spin var(--orbit-fast) linear infinite; }
+    .r2{ width: calc(var(--orbit-radius) * 1.4); height: calc(var(--orbit-radius) * 1.4); margin-left: calc(-0.7 * var(--orbit-radius)); margin-top: calc(-0.7 * var(--orbit-radius)); animation: spin var(--orbit-med) linear infinite reverse; }
+    .r3{ width: calc(var(--orbit-radius) * 0.9); height: calc(var(--orbit-radius) * 0.9); margin-left: calc(-0.45 * var(--orbit-radius)); margin-top: calc(-0.45 * var(--orbit-radius)); animation: spin var(--orbit-slow) linear infinite; }
+
+    .ring .no{
+      position:absolute;
+      left:50%;
+      top:0%;
+      transform:translate(-50%,-50%);
+      width:var(--no-size);
+      height:var(--no-size);
+      border-radius:999px;
+      background:linear-gradient(135deg,#fff7fb,#fff0f4);
+      color:#b44a78;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:800;
+      font-size:15px;
+      box-shadow:0 12px 34px rgba(200,60,110,0.10);
+      pointer-events:none; /* double-safety on each badge */
+      -webkit-user-select:none;
+      user-select:none;
+    }
+
+    @keyframes spin{ 0%{ transform: rotate(0deg); } 100%{ transform: rotate(360deg); } }
+
+    /* responsive tweaks */
+    @media (max-width:1000px){
+      .card{ grid-template-columns:1fr; padding:12px; }
+      .photo{ height:55vh; }
+    }
+    @media (max-width:480px){
+      :root{ --no-size:72px; --orbit-fast:4.6s; --orbit-med:7.8s; --orbit-slow:11.5s; }
+      .photo{ height:46vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="card">
+      <!-- LEFT: Big photo -->
+      <div class="photo" id="photo">
+        <img id="usPhoto" src="us.jpg" alt="Us together" />
+        <button class="view-full" id="viewFullBtn" aria-label="View full photo">View full</button>
+      </div>
+
+      <!-- RIGHT: side panel -->
+      <div class="side">
+        <div>
+          <h1>Hey Babyboy ❤️</h1>
+          <p class="lead">Will you be my Valentine?</p>
+        </div>
+
+        <div class="countdown" id="countdown" aria-live="polite">
+          <div class="time-box"><div class="num" id="days">--</div><div class="label">Days</div></div>
+          <div class="time-box"><div class="num" id="hours">--</div><div class="label">Hours</div></div>
+          <div class="time-box"><div class="num" id="mins">--</div><div class="label">Minutes</div></div>
+          <div class="time-box"><div class="num" id="secs">--</div><div class="label">Seconds</div></div>
+        </div>
+
+        <div class="actions" id="actions">
+          <button id="yesBtn" class="btn btn-yes" aria-label="Yes">Yes 💕</button>
+          <!-- visual-only placeholder (we don't want any interactive No) -->
+          <div id="noPlaceholder" style="width:0;height:0" aria-hidden="true"></div>
+        </div>
+
+        <div class="secret" id="secret">
+          <h2 id="celebrateTitle">Yayyy, I knew you’d say yes 😏💖</h2>
+          <p id="secretText">
+Congrats… you’re officially stuck with me forever 🥰✨
+
+You’re not just my boyfriend — you’re my safe place, my favorite person, my 3 a.m. thought, and the smile I didn’t know I needed every day. I love you tons :)
+          </p>
+          <p style="text-align:right;font-weight:700;margin-top:8px;">— Neha 💘</p>
+
+          <div id="celebrateText" class="celebrate-text">WOOHOOOO 🎉</div>
+        </div>
+
+        <div class="footer">This little page was made to be as cute and silly as our love 💖</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full-image modal -->
+  <div class="modal" id="modal">
+    <div class="imgwrap"><img id="modalImg" src="us.jpg" alt="Full view of us" /></div>
+    <button class="close" id="modalClose">Close</button>
+  </div>
+
+  <!-- ORBIT VISUAL (three rings) - visual-only, untouchable -->
+  <div class="orbit-wrapper" aria-hidden="true">
+    <div class="ring r1"><div class="no">No 🙃</div></div>
+    <div class="ring r2"><div class="no">No 🙃</div></div>
+    <div class="ring r3"><div class="no">No 🙃</div></div>
+  </div>
+
+  <!-- Two hidden audio elements (only two songs) -->
+  <audio id="audioA" preload="auto" playsinline webkit-playsinline crossorigin="anonymous"></audio>
+  <audio id="audioB" preload="auto" playsinline webkit-playsinline crossorigin="anonymous"></audio>
+
+  <!-- Tap overlay to unlock audio on iPhone (one tap) -->
+  <div class="tap-overlay" id="tapOverlay" role="dialog" aria-modal="true" aria-label="Tap to play">
+    <div style="font-weight:800;color:#b03a6b;font-size:18px;text-align:center">Tap once to start the songs & ensure the photo loads</div>
+    <button id="startBtn" class="tap-btn">Play ❤</button>
+    <div class="tap-hint">iPhone requires a tap to allow audio — this also ensures the image displays properly.</div>
+  </div>
+
+  <div class="hearts-layer" id="heartsLayer" aria-hidden="true"></div>
+
+  <script>
+    // ---------- Countdown ----------
+    function getNextValentines(){
+      const now = new Date();
+      let year = now.getFullYear();
+      const target = new Date(year, 1, 14, 0, 0, 0);
+      if (now > target) target.setFullYear(year + 1);
+      return target;
+    }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function updateCountdown(){
+      const t = getNextValentines() - new Date();
+      const secs = Math.floor(t/1000) % 60;
+      const mins = Math.floor(t/1000/60) % 60;
+      const hours = Math.floor(t/1000/3600) % 24;
+      const days = Math.floor(t/1000/3600/24);
+      document.getElementById('days').textContent = days;
+      document.getElementById('hours').textContent = pad(hours);
+      document.getElementById('mins').textContent = pad(mins);
+      document.getElementById('secs').textContent = pad(secs);
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
+    // ---------- Playlist (two songs only) ----------
+    const playlist = [
+      { src: 'findin_her.mp3', title: 'Findin Her' },
+      { src: 'pehle_bhi_main.mp3', title: 'Pehle Bhi Main' }
+    ];
+    const audioA = document.getElementById('audioA');
+    const audioB = document.getElementById('audioB');
+    let active = audioA, standby = audioB;
+    let activeIndex = 0, isPlaying = false, autoplayQueue = true;
+
+    function safeSetVol(el, v){ try{ el.volume = Math.max(0, Math.min(1, v)); }catch(e){} }
+    function loadTo(el, index){ if (!playlist[index]) return; el.src = playlist[index].src; el.load(); }
+
+    function crossfadeTo(index, fadeMs = 1200){
+      if (index < 0 || index >= playlist.length) return;
+      loadTo(standby, index);
+      standby.currentTime = 0;
+      safeSetVol(standby, 0);
+      const targetVol = 0.9;
+      const stepMs = 60;
+      const steps = Math.max(1, Math.round(fadeMs/stepMs));
+      let cur = 0;
+      const p = standby.play();
+      if (p && p.catch) p.catch(()=>{});
+      const timer = setInterval(()=>{
+        cur++;
+        const t = cur/steps;
+        safeSetVol(standby, Math.min(targetVol, t*targetVol));
+        safeSetVol(active, Math.max(0, (1-t)*targetVol));
+        if (cur >= steps){
+          clearInterval(timer);
+          try{ active.pause(); }catch(e){}
+          const tmp = active; active = standby; standby = tmp;
+          activeIndex = index; isPlaying = true;
+          active.onended = ()=> {
+            if (autoplayQueue){
+              const next = (activeIndex + 1) % playlist.length;
+              crossfadeTo(next, 1200);
+            } else { isPlaying = false; }
+          };
+        }
+      }, stepMs);
+    }
+
+    // Start playback inside a user gesture (iOS friendly)
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    async function startPlaybackGesture(){
+      try {
+        if (!audioCtx && AudioCtx) audioCtx = new AudioCtx();
+        if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+      } catch(e){ console.warn('AudioContext resume failed', e); }
+      try {
+        loadTo(active, 0);
+        active.currentTime = 0;
+        await active.play();
+        safeSetVol(active, 0.9);
+        standby.pause();
+        isPlaying = true;
+        activeIndex = 0;
+        active.onended = ()=> {
+          const next = (activeIndex + 1) % playlist.length;
+          crossfadeTo(next, 1200);
+        };
+      } catch (err){
+        console.warn('Playback start error', err);
+      }
+    }
+
+    // ---------- Orbit visual already configured in CSS ----------
+    // Nothing to attach for interaction; it's visual-only and pointer-events:none.
+
+    // ---------- Tap overlay ----------
+    const tapOverlay = document.getElementById('tapOverlay');
+    const startBtn = document.getElementById('startBtn');
+    const usPhoto = document.getElementById('usPhoto');
+
+    startBtn.addEventListener('click', async ()=>{
+      // reveal image (already in DOM)
+      usPhoto.style.opacity = 1;
+      await startPlaybackGesture();
+      tapOverlay.style.display = 'none';
+      try{ if (navigator.vibrate) navigator.vibrate(40); } catch(e){}
+    });
+
+    window.addEventListener('load', ()=> { try{ loadTo(active,0); }catch(e){} });
+
+    // ---------- YES button behavior ----------
+    const yesBtn = document.getElementById('yesBtn');
+    const secret = document.getElementById('secret');
+    const celebrateText = document.getElementById('celebrateText');
+    const heartsLayer = document.getElementById('heartsLayer');
+    const orbitWrapper = document.querySelector('.orbit-wrapper');
+
+    function doVibrate(){ try{ if (navigator.vibrate) navigator.vibrate([150,60,150]); }catch(e){} }
+    function hideOrbitVisual(){ if (orbitWrapper) orbitWrapper.style.display = 'none'; }
+
+    function showCelebrate(){
+      if (celebrateText){
+        celebrateText.style.display = 'block';
+        celebrateText.style.animation = 'none';
+        requestAnimationFrame(()=> celebrateText.style.animation = '');
+      }
+    }
+
+    function spawnHeartsSpell(){
+      const message = ['I',' ','L','O','V','E',' ','Y','O','U',' ','P','R','A','T','H','A','M'];
+      const emojiPool = ['💖','💘','💕','💞'];
+      let i=0;
+      const spawn = ()=>{
+        if (i >= message.length) return;
+        const ch = message[i];
+        const heart = document.createElement('div');
+        heart.textContent = ch === ' ' ? emojiPool[Math.floor(Math.random()*emojiPool.length)] : (Math.random()<0.18 ? ch + emojiPool[Math.floor(Math.random()*emojiPool.length)] : ch);
+        heart.style.position = 'fixed';
+        heart.style.left = (5 + Math.random()*90) + '%';
+        heart.style.bottom = '-40px';
+        heart.style.padding = '10px';
+        heart.style.borderRadius = '28px';
+        heart.style.background = 'linear-gradient(135deg,#ff7aa5,#ffd0e0)';
+        heart.style.color = 'white';
+        heart.style.fontWeight = '700';
+        heart.style.zIndex = 12000;
+        heart.style.fontSize = '18px';
+        heart.style.transition = 'transform 5s linear, opacity 5s linear';
+        document.body.appendChild(heart);
+        requestAnimationFrame(()=> {
+          heart.style.transform = 'translateY(-120vh) rotate(' + (Math.random()*60-30) + 'deg)';
+          heart.style.opacity = '0';
+        });
+        setTimeout(()=> heart.remove(), 5200);
+        i++;
+        setTimeout(spawn, 260);
+      };
+      spawn();
+    }
+
+    yesBtn.addEventListener('click', async ()=>{
+      doVibrate();
+      hideOrbitVisual();        // hide orbit visuals to clear the view
+      secret.style.display = 'block';
+      showCelebrate();
+      try { await active.play().catch(()=>{}); } catch(e){}
+      spawnHeartsSpell();
+      for (let k=0;k<5;k++) setTimeout(spawnHeartsSpell, 420 + k*320);
+      setTimeout(()=> secret.scrollIntoView({behavior:'smooth', block:'center'}), 260);
+    });
+
+    // ---------- Full image modal ----------
+    const viewFullBtn = document.getElementById('viewFullBtn');
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const modalClose = document.getElementById('modalClose');
+
+    viewFullBtn.addEventListener('click', ()=>{
+      modal.style.display = 'flex';
+      modalImg.src = usPhoto.src || 'us.jpg';
+      try{ if (navigator.vibrate) navigator.vibrate(20); } catch(e){}
+    });
+    modalClose.addEventListener('click', ()=> modal.style.display = 'none');
+    modal.addEventListener('click', (e)=> { if (e.target === modal) modal.style.display = 'none'; });
+
+    // prevent context menu on photo
+    usPhoto.addEventListener('contextmenu', e=> e.preventDefault());
+
+    // preload first track to speed user gesture start
+    window.addEventListener('load', ()=> { try{ loadTo(active,0); }catch(e){} });
+
+    console.log('Updated: music dashboard removed, two-song player kept. "No" visuals orbit across viewport and are not clickable (pointer-events:none).');
+  </script>
+</body>
+</html>
